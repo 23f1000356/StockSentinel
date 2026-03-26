@@ -9,8 +9,10 @@ import {
   Upload,
   Download,
   LogOut,
+  X
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useSidebar } from '../context/SidebarContext';
 
 const menuItems = [
   { path: '/user', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,12 +28,18 @@ const menuItems = [
 export function UserSidebar() {
   const location = useLocation();
   const { logout } = useStore();
+  const { close } = useSidebar();
 
   return (
-    <aside className="w-64 bg-[#1E1E1E] text-white flex flex-col">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-[#C89B5A]">StockSentinel</h1>
-        <p className="text-sm text-gray-400 mt-1">User Dashboard</p>
+    <aside className="w-full h-full bg-[#1E1E1E] text-white flex flex-col overflow-hidden">
+      <div className="p-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#C89B5E]">StockSentinel</h1>
+          <p className="text-sm text-gray-400 mt-1">User Dashboard</p>
+        </div>
+        <button onClick={close} className="lg:hidden p-2 text-gray-400 hover:text-white">
+          <X className="w-6 h-6" />
+        </button>
       </div>
 
       <nav className="flex-1 px-3">
@@ -43,6 +51,7 @@ export function UserSidebar() {
             <Link
               key={item.path}
               to={item.path}
+              onClick={close}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-1 transition-colors ${
                 isActive
                   ? 'bg-[#C89B5A] text-white'

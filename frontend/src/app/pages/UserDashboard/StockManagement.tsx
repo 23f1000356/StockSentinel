@@ -53,7 +53,7 @@ export function StockManagement() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -99,8 +99,8 @@ export function StockManagement() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex gap-4">
+      <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -113,40 +113,42 @@ export function StockManagement() {
             />
           </div>
 
-          {/* Category Filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-4">
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
-          {/* Stock Status Filter */}
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
-          >
-            <option value="All">All</option>
-            <option value="In Stock">In Stock</option>
-            <option value="Low Stock">Low Stock</option>
-            <option value="Out of Stock">Out of Stock</option>
-          </select>
+            {/* Stock Status Filter */}
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
+            >
+              <option value="All">All</option>
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 min-w-0 overflow-x-auto pb-2 no-scrollbar scrollbar-hide">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategoryFilter(cat)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
               categoryFilter === cat
                 ? 'text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -286,18 +288,18 @@ export function StockManagement() {
               return (
               <div
                 key={productId}
-                className="group flex items-center justify-between p-3 rounded-lg bg-[#FEF3C7] hover:!bg-[#111111] transition-colors"
+                className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 rounded-lg bg-[#FEF3C7] hover:!bg-[#111111] transition-colors gap-3"
                 style={{ backgroundColor: '#FEF3C7' }}
               >
                 <div>
                   <p className="text-sm !text-black group-hover:!text-white font-medium">{product.name}</p>
                   <p className="text-xs !text-black group-hover:!text-white">{product.stock} units remaining</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start bg-white/50 sm:bg-transparent p-2 sm:p-0 rounded-lg">
                   <button
                     onClick={() => handleStockChange(productId, -1)}
                     disabled={isUpdating}
-                    className="w-8 h-8 rounded-lg bg-white text-black hover:bg-gray-100 group-hover:bg-[#222222] group-hover:text-white flex items-center justify-center disabled:opacity-50"
+                    className="w-8 h-8 rounded-lg bg-white text-black hover:bg-gray-100 group-hover:bg-[#222222] group-hover:text-white flex items-center justify-center disabled:opacity-50 border border-gray-200 sm:border-none"
                   >
                     <Minus size={14} />
                   </button>

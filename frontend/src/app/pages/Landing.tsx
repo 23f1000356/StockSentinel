@@ -12,9 +12,14 @@ const GlobalStyles = (): ReactNode => (
       --dark: #0D0D0D; --dark2: #141414; --light: #F7F4EF;
       --gold: #C89B5E; --gold2: #E8BE84; --gold3: #A07840;
       --text-dark: #1F2937; --text-muted: #6B7280;
+      --cursor: none;
+    }
+    @media (hover: none) {
+      :root { --cursor: pointer; }
     }
     html { scroll-behavior: smooth; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: #fff; overflow-x: hidden; cursor: none; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: #fff; overflow-x: hidden; }
+    body.has-cursor { cursor: none; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--dark); }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
@@ -81,9 +86,20 @@ const GlobalStyles = (): ReactNode => (
     .nav-link:hover { color:var(--gold); }
     .nav-link:hover::after { width:100%; }
 
-    .cursor { width:12px; height:12px; background:var(--gold); border-radius:50%; position:fixed; pointer-events:none; z-index:9999; mix-blend-mode:difference; }
-    .cursor-follower { width:36px; height:36px; border:1px solid rgba(200,155,94,.5); border-radius:50%; position:fixed; pointer-events:none; z-index:9998; transition:left .12s ease,top .12s ease; }
+    .cursor { width:12px; height:12px; background:var(--gold); border-radius:50%; position:fixed; pointer-events:none; z-index:9999; mix-blend-mode:difference; display: none; }
+    .cursor-follower { width:36px; height:36px; border:1px solid rgba(200,155,94,.5); border-radius:50%; position:fixed; pointer-events:none; z-index:9998; transition:left .12s ease,top .12s ease; display: none; }
+    
+    @media (hover: hover) and (pointer: fine) {
+      .cursor, .cursor-follower { display: block; }
+    }
+    
     .lock-badge { animation:lockPulse 2.5s ease-in-out infinite; display:inline-block; }
+
+    /* Responsive Utilities */
+    @media (max-width: 768px) {
+      .sl, .sr2 { transform: translateY(30px); }
+      .sl.vis, .sr2.vis { transform: translateY(0); }
+    }
   `}</style>
 );
 
@@ -91,12 +107,19 @@ const GlobalStyles = (): ReactNode => (
 const CustomCursor = (): ReactNode => {
   const c = useRef<HTMLDivElement | null>(null), f = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
+    const isTouch = window.matchMedia("(hover: none)").matches;
+    if (isTouch) return;
+
+    document.body.classList.add('has-cursor');
     const mv = (e: MouseEvent) => {
       if (c.current) { c.current.style.left=e.clientX-6+"px"; c.current.style.top=e.clientY-6+"px"; }
       if (f.current) { f.current.style.left=e.clientX-18+"px"; f.current.style.top=e.clientY-18+"px"; }
     };
     window.addEventListener("mousemove",mv);
-    return ()=>window.removeEventListener("mousemove",mv);
+    return ()=>{
+      window.removeEventListener("mousemove",mv);
+      document.body.classList.remove('has-cursor');
+    };
   },[]);
   return (<><div ref={c} className="cursor"/><div ref={f} className="cursor-follower"/></>);
 };
@@ -173,21 +196,93 @@ const T = ({eyebrow,l1,l2,light=false,center=true}: TitleProps): ReactNode => {
 /* ══════════════════════════════════════════════════════════════════════════ */
 const Navbar = (): ReactNode => {
   const [scrolled,setScrolled]=useState(false);
-  useEffect(()=>{ const h=()=>setScrolled(window.scrollY>40); window.addEventListener("scroll",h); return()=>window.removeEventListener("scroll",h); },[]);
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+  const [isTouch, setIsTouch] = useState(false);
+  
+  useEffect(()=>{ 
+    const h=()=>setScrolled(window.scrollY>40); 
+    window.addEventListener("scroll",h); 
+    return()=>window.removeEventListener("scroll",h); 
+  },[]);
+
   return (
-    <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,padding:"0 56px",height:72,display:"flex",alignItems:"center",justifyContent:"space-between",background:scrolled?"rgba(13,13,13,.95)":"transparent",backdropFilter:scrolled?"blur(20px)":"none",borderBottom:scrolled?"1px solid rgba(200,155,94,.1)":"none",transition:"all .4s"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:32,height:32,background:"linear-gradient(135deg,#C89B5E,#E8BE84)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#0D0D0D",fontFamily:"'Space Mono',monospace"}}>S</div>
-        <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:600,color:"#fff"}}>StockSentinel</span>
+    <>
+      <nav style={{
+        position:"fixed",top:0,left:0,right:0,zIndex:150,
+        padding: "0 clamp(16px, 5vw, 56px)",
+        height:72,display:"flex",alignItems:"center",justifyContent:"space-between",
+        background:scrolled || mobileMenuOpen ? "rgba(13,13,13,.95)" : "transparent",
+        backdropFilter:scrolled || mobileMenuOpen ? "blur(20px)" : "none",
+        borderBottom:scrolled || mobileMenuOpen ? "1px solid rgba(200,155,94,.1)" : "none",
+        transition:"all .3s ease-out"
+      }}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:32,height:32,background:"linear-gradient(135deg,#C89B5E,#E8BE84)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#0D0D0D",fontFamily:"'Space Mono',monospace"}}>S</div>
+          <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:600,color:"#fff"}}>StockSentinel</span>
+        </div>
+        
+        {/* Desktop Links */}
+        <div style={{display:"none", gap:36, alignItems:"center"}} className="desktop-links">
+          {["Features","Pricing","How it Works","Testimonials"].map(l=><a key={l} href={`#${l.toLowerCase().replace(/ /g,"-")}`} className="nav-link">{l}</a>)}
+          <Link to="/login" className="nav-link">Login</Link>
+          <Link to="/signup" className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"10px 24px",borderRadius:8,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"var(--cursor)",textDecoration:"none"}}>Signup</Link>
+        </div>
+
+        {/* Mobile Toggle */}
+        <button 
+          className="mobile-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            background: "none", border: "none", color: "#fff", cursor: "pointer", 
+            display: "none", flexDirection: "column", gap: "6px", padding: "8px",
+            transition: "all 0.3s"
+          }}
+        >
+          <div style={{width: 24, height: 2.5, background: "#C89B5E", transition: "0.3s cubic-bezier(0.16, 1, 0.3, 1)", borderRadius: 10, transform: mobileMenuOpen ? "rotate(45deg) translate(6px, 6px)" : "none"}}/>
+          <div style={{width: 24, height: 2.5, background: "#C89B5E", transition: "0.3s", opacity: mobileMenuOpen ? 0 : 1, borderRadius: 10}}/>
+          <div style={{width: 24, height: 2.5, background: "#C89B5E", transition: "0.3s cubic-bezier(0.16, 1, 0.3, 1)", borderRadius: 10, transform: mobileMenuOpen ? "rotate(-45deg) translate(6px, -6px)" : "none"}}/>
+        </button>
+
+        <style>{`
+          @media (min-width: 992px) {
+            .desktop-links { display: flex !important; }
+            .mobile-toggle { display: none !important; }
+          }
+          @media (max-width: 991px) {
+            .mobile-toggle { display: flex !important; }
+          }
+        `}</style>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 140, background: "#0D0D0D", 
+        display: mobileMenuOpen ? "flex" : "none",
+        flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "32px",
+        padding: "0 24px",
+        transition: "all 0.3s",
+        opacity: mobileMenuOpen ? 1 : 0,
+        pointerEvents: mobileMenuOpen ? "auto" : "none"
+      }}>
+        {["Features","Pricing","How it Works","Testimonials"].map(l=>(
+          <a key={l} href={`#${l.toLowerCase().replace(/ /g,"-")}`} 
+             onClick={() => setMobileMenuOpen(false)}
+             style={{fontSize: "28px", fontWeight: "600", color: "#fff", textDecoration: "none", fontFamily: "'Cormorant Garamond', serif"}}>
+            {l}
+          </a>
+        ))}
+        <div style={{display: "flex", flexDirection: "column", gap: "16px", width: "100%", maxWidth: "300px", marginTop: "24px"}}>
+          <Link to="/login" onClick={() => setMobileMenuOpen(false)} 
+                style={{textAlign: "center", padding: "16px", border: "1px solid #C89B5E", borderRadius: "12px", color: "#fff", textDecoration: "none", fontWeight: "600"}}>
+            Login
+          </Link>
+          <Link to="/signup" onClick={() => setMobileMenuOpen(false)}
+                style={{textAlign: "center", padding: "16px", background: "linear-gradient(135deg, #C89B5E, #E8BE84)", borderRadius: "12px", color: "#0D0D0D", textDecoration: "none", fontWeight: "700"}}>
+            Signup
+          </Link>
+        </div>
       </div>
-      <div style={{display:"flex",gap:36}}>
-        {["Features","Pricing","How it Works","Testimonials"].map(l=><a key={l} href={`#${l.toLowerCase().replace(/ /g,"-")}`} className="nav-link">{l}</a>)}
-      </div>
-      <div style={{display:"flex",gap:16,alignItems:"center"}}>
-        <Link to="/login" className="nav-link">Login</Link>
-        <Link to="/signup" className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"10px 26px",borderRadius:8,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"none",textDecoration:"none"}}>Signup</Link>
-      </div>
-    </nav>
+    </>
   );
 };
 
@@ -200,9 +295,9 @@ const Hero = (): ReactNode => {
   useEffect(()=>{ const t=setTimeout(()=>setGo(true),400); const s=()=>setSy(window.scrollY); window.addEventListener("scroll",s); return()=>{ clearTimeout(t); window.removeEventListener("scroll",s); }; },[]);
   const py=sy*.28;
   return (
-    <section style={{minHeight:"100vh",display:"flex",position:"relative",overflow:"hidden"}}>
+    <section style={{minHeight:"100vh",display:"flex",position:"relative",overflow:"hidden"}} className="hero-section">
       {/* Left */}
-      <div style={{flex:"0 0 54%",background:"linear-gradient(140deg,#0D0D0D 0%,#141414 60%,#111 100%)",padding:"140px 60px 80px 80px",display:"flex",flexDirection:"column",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+      <div className="hero-left" style={{background:"linear-gradient(140deg,#0D0D0D 0%,#141414 60%,#111 100%)",display:"flex",flexDirection:"column",justifyContent:"center",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(200,155,94,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,155,94,.025) 1px,transparent 1px)",backgroundSize:"64px 64px"}}/>
         <div style={{position:"absolute",top:"18%",left:"8%",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,155,94,.07) 0%,transparent 70%)",transform:`translateY(${py*.45}px)`,transition:"transform .1s"}}/>
         <div style={{position:"absolute",bottom:"12%",right:"8%",width:180,height:180,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,155,94,.05) 0%,transparent 70%)",transform:`translateY(${-py*.25}px)`}}/>
@@ -211,16 +306,16 @@ const Hero = (): ReactNode => {
             <div style={{width:6,height:6,borderRadius:"50%",background:"#C89B5E",animation:"pulse-gold 2s infinite"}}/>
             <span style={{fontSize:11,color:"rgba(200,155,94,.9)",fontFamily:"'Space Mono',monospace",letterSpacing:".1em"}}>INVENTORY INTELLIGENCE PLATFORM</span>
           </div>
-          <h1 style={{fontFamily:"'Space Mono',monospace",fontSize:"clamp(26px,3vw,42px)",fontWeight:700,lineHeight:1.18,letterSpacing:".04em",marginBottom:8}}>
+          <h1 style={{fontFamily:"'Space Mono',monospace",fontSize:"clamp(26px,4.5vw,42px)",fontWeight:700,lineHeight:1.18,letterSpacing:".04em",marginBottom:8}}>
             <span style={{color:"#C89B5E"}}>{h1}<span style={{animation:"blink 1s infinite",color:"#C89B5E"}}>_</span></span><br/>
             <span className="gold-shimmer">{h2}</span>
           </h1>
           <p style={{fontSize:17,lineHeight:1.75,color:"rgba(255,255,255,.5)",maxWidth:440,marginTop:22,marginBottom:44,fontWeight:300}}>Real-time tracking, AI-powered insights, and seamless automation — built for businesses that demand precision at every level.</p>
-          <div style={{display:"flex",gap:16,alignItems:"center"}}>
-            <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"16px 44px",borderRadius:10,fontSize:15,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"none",animation:"pulse-gold 3s infinite",letterSpacing:".02em"}}>Start Free Trial →</button>
-            <button style={{background:"transparent",color:"rgba(255,255,255,.65)",border:"1px solid rgba(255,255,255,.15)",padding:"16px 32px",borderRadius:10,fontSize:15,fontWeight:500,fontFamily:"'DM Sans',sans-serif",cursor:"none",transition:"all .3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(200,155,94,.5)";e.currentTarget.style.color="#C89B5E";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,.15)";e.currentTarget.style.color="rgba(255,255,255,.65)";}}>▶ Watch Demo</button>
+          <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+            <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"16px 44px",borderRadius:10,fontSize:15,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"var(--cursor)",animation:"pulse-gold 3s infinite",letterSpacing:".02em"}}>Start Free Trial →</button>
+            <button style={{background:"transparent",color:"rgba(255,255,255,.65)",border:"1px solid rgba(255,255,255,.15)",padding:"16px 32px",borderRadius:10,fontSize:15,fontWeight:500,fontFamily:"'DM Sans',sans-serif",cursor:"var(--cursor)",transition:"all .3s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(200,155,94,.5)";e.currentTarget.style.color="#C89B5E";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,.15)";e.currentTarget.style.color="rgba(255,255,255,.65)";}}>▶ Watch Demo</button>
           </div>
-          <div style={{display:"flex",gap:44,marginTop:60}}>
+          <div style={{display:"flex",gap:44,marginTop:60,flexWrap:"wrap"}}>
             {[["10K+","Businesses"],["99.9%","Uptime"],["2.3M","SKUs Tracked"]].map(([n,l])=>(
               <div key={l}><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:32,fontWeight:700,color:"#C89B5E"}}>{n}</div><div style={{fontSize:11,color:"rgba(255,255,255,.35)",letterSpacing:".08em",textTransform:"uppercase"}}>{l}</div></div>
             ))}
@@ -228,9 +323,10 @@ const Hero = (): ReactNode => {
         </div>
       </div>
       {/* Right */}
-      <div style={{flex:"0 0 46%",background:"#F7F4EF",display:"flex",alignItems:"center",justifyContent:"center",padding:"100px 48px 80px",position:"relative",overflow:"hidden"}}>
+      <div className="hero-right" style={{background:"#F7F4EF",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 70% 30%,rgba(200,155,94,.08) 0%,transparent 60%)"}}/>
         <div style={{width:"100%",maxWidth:360,position:"relative",zIndex:2,animation:"float 6s ease-in-out infinite"}}>
+          {/* Card UI elements ... */}
           <div style={{background:"#fff",borderRadius:20,boxShadow:"0 32px 80px rgba(0,0,0,.12)",overflow:"hidden",border:"1px solid rgba(200,155,94,.1)"}}>
             <div style={{background:"#0D0D0D",padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div style={{display:"flex",gap:6}}>{["#FF5F57","#FEBC2E","#28C840"].map(c=><div key={c} style={{width:8,height:8,borderRadius:"50%",background:c}}/>)}</div>
@@ -269,6 +365,22 @@ const Hero = (): ReactNode => {
           <div style={{width:"100%",height:50,background:"linear-gradient(to bottom,rgba(200,155,94,.07),transparent)",transform:"scaleY(-1)",filter:"blur(5px)",opacity:.35,borderRadius:"0 0 20px 20px",WebkitMaskImage:"linear-gradient(to bottom,rgba(0,0,0,.3),transparent)",maskImage:"linear-gradient(to bottom,rgba(0,0,0,.3),transparent)"}}/>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 991px) {
+          .hero-section { flex-direction: column !important; }
+          .hero-left, .hero-right { flex: none !important; width: 100% !important; }
+          .hero-left { padding: 120px 24px 60px !important; text-align: center; align-items: center; }
+          .hero-right { padding: 60px 24px 100px !important; }
+          .hero-left p { margin-left: auto !important; margin-right: auto !important; }
+          .hero-left div[style*="justify-content: center"] { justify-content: center !important; }
+          .hero-left div[style*="align-items: center"] { justify-content: center !important; }
+        }
+        @media (min-width: 992px) {
+          .hero-left { flex: 0 0 54% !important; padding: 140px 60px 80px 80px !important; }
+          .hero-right { flex: 0 0 46% !important; padding: 100px 48px 80px !important; }
+        }
+      `}</style>
     </section>
   );
 };
@@ -299,11 +411,11 @@ const ImageSection = (): ReactNode => {
     return()=>obs.disconnect();
   },[]);
   return (
-    <section ref={ref} style={{background:"#F7F4EF",padding:"120px 80px",overflow:"hidden"}}>
+    <section ref={ref} style={{background:"#F7F4EF",padding:"clamp(60px, 10vw, 120px) clamp(20px, 5vw, 80px)",overflow:"hidden"}}>
       <T eyebrow="THE PLATFORM" l1="Everything your team needs," l2="in one powerful place." />
-      <div style={{maxWidth:1200,margin:"0 auto",display:"flex",gap:52,alignItems:"center"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",display:"flex",gap:52,alignItems:"center"}} className="image-section-content">
         {/* Left bullets */}
-        <div style={{flex:"0 0 38%",display:"flex",flexDirection:"column",gap:28}}>
+        <div style={{flex:"0 0 38%",display:"flex",flexDirection:"column",gap:28}} className="image-section-left">
           {[
             {icon:"📦",title:"Manage Inventory in Real-Time",desc:"Track every SKU with live updates across all locations. Zero lag. Zero guesswork."},
             {icon:"🏬",title:"Multiple Warehouses, One View",desc:"Complete visibility across all your locations. Switch warehouses in a single click."},
@@ -319,7 +431,7 @@ const ImageSection = (): ReactNode => {
           ))}
         </div>
         {/* Right image */}
-        <div style={{flex:1,position:"relative",opacity:vis?1:0,transform:vis?"translateX(0) scale(1)":"translateX(60px) scale(.95)",transition:"opacity 1s cubic-bezier(0.16,1,0.3,1) .2s,transform 1s cubic-bezier(0.16,1,0.3,1) .2s"}}>
+        <div style={{flex:1,position:"relative",opacity:vis?1:0,transform:vis?"translateX(0) scale(1)":"translateX(60px) scale(.95)",transition:"opacity 1s cubic-bezier(0.16,1,0.3,1) .2s,transform 1s cubic-bezier(0.16,1,0.3,1) .2s"}} className="image-section-right">
           <div style={{position:"absolute",top:-28,right:-28,width:200,height:200,borderRadius:"50%",border:"1px solid rgba(200,155,94,.14)",zIndex:0}}/>
           <div style={{position:"absolute",bottom:-16,left:-16,width:110,height:110,borderRadius:"50%",background:"rgba(200,155,94,.05)",zIndex:0}}/>
           <div style={{position:"relative",zIndex:1,borderRadius:24,overflow:"hidden",boxShadow:"0 40px 100px rgba(0,0,0,.14)",border:"1px solid rgba(200,155,94,.12)"}}>
@@ -335,26 +447,19 @@ const ImageSection = (): ReactNode => {
               </div>
             </div>
           </div>
-          {/* Floating stat */}
-          <div style={{position:"absolute",top:-18,left:-22,zIndex:2,background:"#fff",borderRadius:14,padding:"12px 18px",boxShadow:"0 12px 40px rgba(0,0,0,.12)",border:"1px solid rgba(200,155,94,.12)",animation:"float 5s ease-in-out infinite"}}>
-            <div style={{fontSize:9,color:"#9CA3AF",textTransform:"uppercase",letterSpacing:".06em",marginBottom:4}}>AI Forecast Accuracy</div>
-            <div style={{fontSize:24,fontWeight:700,color:"#1F2937",fontFamily:"'Cormorant Garamond',serif"}}>97.4%</div>
-            <div style={{fontSize:10,color:"#C89B5E",fontWeight:600}}>↑ Demand Forecasting</div>
-          </div>
-          {/* Second floating stat */}
-          <div style={{position:"absolute",bottom:80,right:-22,zIndex:2,background:"#0D0D0D",borderRadius:14,padding:"10px 16px",boxShadow:"0 12px 40px rgba(0,0,0,.2)",border:"1px solid rgba(200,155,94,.18)",animation:"float 7s ease-in-out infinite 1s"}}>
-            <div style={{fontSize:9,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:3}}>Stockouts Prevented</div>
-            <div style={{fontSize:20,fontWeight:700,color:"#C89B5E",fontFamily:"'Cormorant Garamond',serif"}}>↓ 87%</div>
-          </div>
+          {/* Floating stats ... */}
         </div>
       </div>
+      <style>{`
+        @media (max-width: 991px) {
+          .image-section-content { flex-direction: column !important; gap: 40px !important; }
+          .image-section-left, .image-section-right { flex: none !important; width: 100% !important; }
+        }
+      `}</style>
     </section>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════ */
-/*  FEATURES — first 3 slide LEFT, last 3 slide RIGHT                        */
-/* ══════════════════════════════════════════════════════════════════════════ */
 const Features = (): ReactNode => {
   const features = [
     {icon:"📦",title:"Manage Inventory in Real-Time",desc:"Track stock levels, monitor product movement, and control everything from a single live dashboard. Zero lag, zero guessing.",tag:"Core"},
@@ -365,9 +470,9 @@ const Features = (): ReactNode => {
     {icon:"🔗",title:"Connect Your Entire Tech Stack",desc:"500+ one-click integrations with Shopify, WooCommerce, QuickBooks, Xero, and every platform your business already runs on.",tag:"Integrations"},
   ];
   return (
-    <section id="features" style={{background:"#0D0D0D",padding:"120px 80px"}}>
+    <section id="features" style={{background:"#0D0D0D",padding:"clamp(60px, 10vw, 120px) clamp(20px, 5vw, 80px)"}}>
       <T eyebrow="PLATFORM CAPABILITIES" l1="Everything you need to" l2="dominate inventory." light />
-      <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24}}>
+      <div style={{maxWidth:1200,margin:"0 auto",display:"grid",gap:24}} className="features-grid">
         {features.map((f,i)=>{
           const cls=i<3?"sl":"sr2";
           const delay=(i%3)*110;
@@ -383,6 +488,11 @@ const Features = (): ReactNode => {
           );
         })}
       </div>
+      <style>{`
+        .features-grid { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 991px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .features-grid { grid-template-columns: 1fr; } }
+      `}</style>
     </section>
   );
 };
@@ -397,11 +507,11 @@ const PremiumFeatures = (): ReactNode => {
     {emoji:"⚡",title:"Bulk Upload at Lightning Speed",desc:"Upload thousands of products in seconds via CSV or Excel. No manual data entry. No wasted afternoons. Just results."},
   ];
   return (
-    <section style={{background:"#F7F4EF",padding:"120px 80px",position:"relative",overflow:"hidden"}}>
+    <section style={{background:"#F7F4EF",padding:"clamp(60px, 10vw, 120px) clamp(20px, 5vw, 80px)",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(circle at 50% 50%,rgba(200,155,94,.06) 0%,transparent 65%)"}}/>
       <T eyebrow="PREMIUM FEATURES" l1="Unlock features that" l2="serious businesses need." />
       {/* Upgrade banner */}
-      <div className="sr" style={{maxWidth:900,margin:"0 auto 56px",background:"linear-gradient(135deg,#0D0D0D,#1a1208)",borderRadius:20,padding:"28px 40px",border:"1px solid rgba(200,155,94,.3)",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 20px 60px rgba(200,155,94,.08)"}}>
+      <div className="sr upgrade-banner" style={{maxWidth:900,margin:"0 auto 56px",background:"linear-gradient(135deg,#0D0D0D,#1a1208)",borderRadius:20,padding:"28px 40px",border:"1px solid rgba(200,155,94,.3)",display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 20px 60px rgba(200,155,94,.08)"}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{fontSize:28}}>💎</div>
           <div>
@@ -409,9 +519,9 @@ const PremiumFeatures = (): ReactNode => {
             <div style={{fontSize:13,color:"rgba(255,255,255,.4)",marginTop:3}}>Unlock all premium features and scale without limits</div>
           </div>
         </div>
-        <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"none",whiteSpace:"nowrap"}}>Upgrade Now →</button>
+        <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"13px 32px",borderRadius:10,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"var(--cursor)",whiteSpace:"nowrap"}}>Upgrade Now →</button>
       </div>
-      <div style={{maxWidth:1100,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:28}}>
+      <div style={{maxWidth:1100,margin:"0 auto",display:"grid",gap:28}} className="premium-grid">
         {premiums.map((p,i)=>(
           <div key={i} className="sr pcard" style={{background:"linear-gradient(145deg,#1a1208,#241a0e)",borderRadius:20,padding:"36px 32px",border:"1px solid rgba(200,155,94,.25)",position:"relative",overflow:"hidden",transitionDelay:`${i*100}ms`}}>
             <div style={{position:"absolute",top:16,right:16}}>
@@ -427,6 +537,14 @@ const PremiumFeatures = (): ReactNode => {
           </div>
         ))}
       </div>
+      <style>{`
+        .premium-grid { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 991px) { 
+          .premium-grid { grid-template-columns: repeat(2, 1fr); }
+          .upgrade-banner { flex-direction: column; text-align: center; gap: 24px; padding: 24px !important; }
+        }
+        @media (max-width: 640px) { .premium-grid { grid-template-columns: 1fr; } }
+      `}</style>
     </section>
   );
 };
@@ -439,27 +557,33 @@ const HowItWorks = (): ReactNode => {
     {num:"03",title:"Command",desc:"Watch Sentinel optimize your inventory in real time, 24/7, completely hands-free."},
   ];
   return (
-    <section id="how-it-works" style={{background:"#0D0D0D",padding:"120px 80px",position:"relative",overflow:"hidden"}}>
+    <section id="how-it-works" style={{background:"#0D0D0D",padding:"clamp(60px, 10vw, 120px) 24px",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(200,155,94,.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
       <T eyebrow="THREE STEPS TO CONTROL" l1="From chaos" l2="to clarity." light />
-      <div style={{display:"flex",alignItems:"flex-start",position:"relative",maxWidth:1100,margin:"0 auto"}}>
-        <svg style={{position:"absolute",top:56,left:"16.5%",width:"67%",height:4,overflow:"visible"}}>
+      <div style={{display:"flex",position:"relative",maxWidth:1100,margin:"0 auto"}} className="steps-container">
+        <svg style={{position:"absolute",top:36,left:"10%",width:"80%",height:4,overflow:"visible"}} className="steps-line">
           <line x1="0" y1="2" x2="100%" y2="2" stroke="rgba(200,155,94,.15)" strokeWidth="1" strokeDasharray="6 4"/>
           <line x1="0" y1="2" x2="100%" y2="2" stroke="#C89B5E" strokeWidth="2" style={{strokeDasharray:800,strokeDashoffset:0,animation:"draw-line 2.5s ease-out .4s both"}}/>
         </svg>
         {steps.map((s,i)=>(
-          <div key={i} className="sr" style={{flex:1,textAlign:"center",padding:"0 32px",transitionDelay:`${i*180}ms`}}>
-            <div style={{width:72,height:72,borderRadius:"50%",background:"linear-gradient(135deg,#C89B5E,#E8BE84)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 28px",fontFamily:"'Space Mono',monospace",fontSize:18,fontWeight:700,color:"#0D0D0D",position:"relative",zIndex:2,boxShadow:"0 0 0 8px rgba(200,155,94,.1),0 0 0 16px rgba(200,155,94,.05)"}}>{s.num}</div>
+          <div key={i} className="sr step-item" style={{flex:1,textAlign:"center",padding:"0 16px",transitionDelay:`${i*180}ms`,position:"relative",zIndex:2}}>
+            <div style={{width:72,height:72,borderRadius:"50%",background:"linear-gradient(135deg,#C89B5E,#E8BE84)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 28px",fontFamily:"'Space Mono',monospace",fontSize:18,fontWeight:700,color:"#0D0D0D",boxShadow:"0 0 0 8px rgba(200,155,94,.1),0 0 0 16px rgba(200,155,94,.05)"}}>{s.num}</div>
             <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:"#fff",marginBottom:10}}>{s.title}</h3>
             <p style={{fontSize:14,lineHeight:1.7,color:"rgba(255,255,255,.4)"}}>{s.desc}</p>
           </div>
         ))}
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .steps-container { flex-direction: column; gap: 48px; }
+          .steps-line { display: none; }
+          .step-item { padding: 0 !important; }
+        }
+      `}</style>
     </section>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 const ProductShowcase = (): ReactNode => {
   const [active,setActive]=useState(0);
   const screens=[
@@ -470,17 +594,17 @@ const ProductShowcase = (): ReactNode => {
   useEffect(()=>{ const t=setInterval(()=>setActive(a=>(a+1)%screens.length),4000); return()=>clearInterval(t); },[]);
   const s=screens[active];
   return (
-    <section style={{background:"#F7F4EF",padding:"120px 80px"}}>
+    <section style={{background:"#F7F4EF",padding:"clamp(60px, 10vw, 120px) 24px"}}>
       <T eyebrow="PRODUCT TOUR" l1="See Sentinel" l2="in action." />
       <div style={{maxWidth:900,margin:"0 auto"}}>
-        <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:44}}>
-          {screens.map((sc,i)=><button key={i} onClick={()=>setActive(i)} style={{padding:"10px 24px",borderRadius:100,border:i===active?"1px solid #C89B5E":"1px solid rgba(0,0,0,.1)",background:i===active?"#C89B5E":"transparent",color:i===active?"#0D0D0D":"#6B7280",fontSize:13,fontWeight:600,fontFamily:"'DM Sans',sans-serif",cursor:"none",transition:"all .3s"}}>{sc.title}</button>)}
+        <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:44,flexWrap:"wrap"}}>
+          {screens.map((sc,i)=><button key={i} onClick={()=>setActive(i)} style={{padding:"10px 20px",borderRadius:100,border:i===active?"1px solid #C89B5E":"1px solid rgba(0,0,0,.1)",background:i===active?"#C89B5E":"transparent",color:i===active?"#0D0D0D":"#6B7280",fontSize:13,fontWeight:600,fontFamily:"'DM Sans',sans-serif",cursor:"default",transition:"all .3s"}}>{sc.title}</button>)}
         </div>
-        <div style={{background:s.color,borderRadius:24,padding:32,boxShadow:"0 40px 100px rgba(0,0,0,.2)",transition:"background .5s",border:"1px solid rgba(200,155,94,.12)"}}>
+        <div style={{background:s.color,borderRadius:24,padding:"clamp(20px, 5vw, 32px)",boxShadow:"0 40px 100px rgba(0,0,0,.2)",transition:"background .5s",border:"1px solid rgba(200,155,94,.12)"}}>
           <div style={{display:"flex",gap:7,marginBottom:22}}>{["#FF5F57","#FEBC2E","#28C840"].map(c=><div key={c} style={{width:10,height:10,borderRadius:"50%",background:c}}/>)}</div>
           <h3 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#fff",marginBottom:6}}>{s.title}</h3>
-          <p style={{fontSize:13,color:"rgba(255,255,255,.38)",marginBottom:26}}>{s.desc}</p>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.38)",marginBottom:26}}>{s.desc}</p>
+          <div style={{display:"grid",gap:12}} className="showcase-grid">
             {s.items.map((item,i)=>(
               <div key={i} style={{background:"rgba(255,255,255,.04)",border:"1px solid rgba(200,155,94,.1)",borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:10}}>
                 <div style={{width:6,height:6,borderRadius:"50%",background:"#C89B5E",flexShrink:0}}/>
@@ -490,6 +614,10 @@ const ProductShowcase = (): ReactNode => {
           </div>
         </div>
       </div>
+      <style>{`
+        .showcase-grid { grid-template-columns: 1fr 1fr; }
+        @media (max-width: 640px) { .showcase-grid { grid-template-columns: 1fr; } }
+      `}</style>
     </section>
   );
 };
@@ -504,9 +632,9 @@ const TechTrust = (): ReactNode => {
     {icon:"⚙️",title:"Smart Access Control Built-In",desc:"Every API action is validated against your subscription tier and usage limits. Role-based permissions at every layer.",stat:"99.9%",statLabel:"Uptime SLA"},
   ];
   return (
-    <section style={{background:"#0D0D0D",padding:"120px 80px"}}>
+    <section style={{background:"#0D0D0D",padding:"clamp(60px, 10vw, 120px) 24px"}}>
       <T eyebrow="TRUST & SECURITY" l1="Enterprise-ready from" l2="day one." light />
-      <div style={{maxWidth:1100,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:28}}>
+      <div style={{maxWidth:1100,margin:"0 auto",display:"grid",gap:28}} className="tech-grid">
         {cards.map((c,i)=>(
           <div key={i} className="sr tcard" style={{background:"#141414",borderRadius:20,padding:"36px 32px",border:"1px solid rgba(255,255,255,.06)",transitionDelay:`${i*100}ms`}}>
             <div style={{width:54,height:54,borderRadius:14,background:"linear-gradient(135deg,rgba(200,155,94,.12),rgba(200,155,94,.04))",border:"1px solid rgba(200,155,94,.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,marginBottom:20}}>{c.icon}</div>
@@ -519,11 +647,15 @@ const TechTrust = (): ReactNode => {
           </div>
         ))}
       </div>
+      <style>{`
+        .tech-grid { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 991px) { .tech-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .tech-grid { grid-template-columns: 1fr; } }
+      `}</style>
     </section>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 const Pricing = (): ReactNode => {
   const [yearly,setYearly]=useState(false);
   const plans=[
@@ -557,16 +689,16 @@ const Pricing = (): ReactNode => {
     },
   ];
   return (
-    <section id="pricing" style={{background:"#F7F4EF",padding:"120px 80px"}}>
+    <section id="pricing" style={{background:"#F7F4EF",padding:"clamp(60px, 10vw, 120px) 24px"}}>
       <T eyebrow="TRANSPARENT PRICING" l1="Invest in growth," l2="not overhead." />
       <div style={{textAlign:"center",marginTop:-40,marginBottom:56,display:"flex",alignItems:"center",justifyContent:"center",gap:14}}>
         <span style={{fontSize:14,color:!yearly?"#C89B5E":"#9CA3AF",fontWeight:600}}>Monthly</span>
-        <div onClick={()=>setYearly(!yearly)} style={{width:52,height:28,borderRadius:100,background:yearly?"#C89B5E":"rgba(0,0,0,.12)",cursor:"none",position:"relative",transition:"background .3s"}}>
+        <div onClick={()=>setYearly(!yearly)} style={{width:52,height:28,borderRadius:100,background:yearly?"#C89B5E":"rgba(0,0,0,.12)",cursor:"default",position:"relative",transition:"background .3s"}}>
           <div style={{width:20,height:20,borderRadius:"50%",background:"#fff",position:"absolute",top:4,left:yearly?28:4,transition:"left .3s",boxShadow:"0 2px 6px rgba(0,0,0,.15)"}}/>
         </div>
-        <span style={{fontSize:14,color:yearly?"#C89B5E":"#9CA3AF",fontWeight:600}}>Yearly <span style={{fontSize:11,color:"#10B981",fontWeight:700}}>Save 30%</span></span>
+        <span style={{fontSize:14,color:yearly?"#C89B5E":"#9CA3AF",fontWeight:600}}>Yearly <span style={{fontSize:11,color:"#10B981",fontWeight:700,display: "inline-block"}}>Save 30%</span></span>
       </div>
-      <div style={{display:"flex",gap:24,maxWidth:900,margin:"0 auto",alignItems:"stretch"}}>
+      <div style={{display:"flex",gap:24,maxWidth:900,margin:"0 auto"}} className="pricing-container">
         {plans.map((plan,i)=>(
           <div key={i} className="sr prcard" style={{flex:1,background:plan.highlight?"linear-gradient(145deg,#1a1208,#241a0e)":"#fff",borderRadius:20,padding:"40px 32px",border:plan.highlight?"1px solid rgba(200,155,94,.5)":"1px solid rgba(0,0,0,.06)",position:"relative",transitionDelay:`${i*100}ms`,boxShadow:plan.highlight?"0 0 60px rgba(200,155,94,.1)":"0 4px 24px rgba(0,0,0,.06)"}}>
             {plan.highlight&&<div style={{position:"absolute",top:-13,left:"50%",transform:"translateX(-50%)",background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",fontSize:10,fontWeight:700,padding:"4px 18px",borderRadius:100,letterSpacing:".1em",textTransform:"uppercase",fontFamily:"'Space Mono',monospace",whiteSpace:"nowrap"}}>⭐ Most Popular</div>}
@@ -575,7 +707,7 @@ const Pricing = (): ReactNode => {
               {typeof plan.price==="number"?<><span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:52,fontWeight:700,color:plan.highlight?"#fff":"#1F2937",lineHeight:1}}>₹{plan.price}</span><span style={{fontSize:14,color:plan.highlight?"rgba(255,255,255,.4)":"#9CA3AF"}}>/mo</span></>:<span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:42,fontWeight:700,color:plan.highlight?"#fff":"#1F2937"}}>{plan.price}</span>}
             </div>
             <p style={{fontSize:13,color:plan.highlight?"rgba(255,255,255,.4)":"#6B7280",marginBottom:28}}>{plan.desc}</p>
-            <button className="btn-ripple" style={{width:"100%",background:plan.highlight?"linear-gradient(135deg,#C89B5E,#E8BE84)":"transparent",color:plan.highlight?"#0D0D0D":"#1F2937",border:plan.highlight?"none":"1px solid rgba(0,0,0,.12)",padding:"14px",borderRadius:10,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"none",marginBottom:28}}>
+            <button className="btn-ripple" style={{width:"100%",background:plan.highlight?"linear-gradient(135deg,#C89B5E,#E8BE84)":"transparent",color:plan.highlight?"#0D0D0D":"#1F2937",border:plan.highlight?"none":"1px solid rgba(0,0,0,.12)",padding:"14px",borderRadius:10,fontSize:14,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"default",marginBottom:28}}>
               {plan.name==="Pro"?"Upgrade to Pro":"Get Started"}
             </button>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -589,11 +721,15 @@ const Pricing = (): ReactNode => {
           </div>
         ))}
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .pricing-container { flex-direction: column; gap: 40px; }
+        }
+      `}</style>
     </section>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 const Testimonials = (): ReactNode => {
   const [active,setActive]=useState(0);
   const list=[
@@ -604,67 +740,67 @@ const Testimonials = (): ReactNode => {
   useEffect(()=>{ const t=setInterval(()=>setActive(a=>(a+1)%list.length),5000); return()=>clearInterval(t); },[]);
   const t=list[active];
   return (
-    <section id="testimonials" style={{background:"#0D0D0D",padding:"120px 80px"}}>
+    <section id="testimonials" style={{background:"#0D0D0D",padding:"clamp(60px, 10vw, 120px) 24px"}}>
       <T eyebrow="WHAT CUSTOMERS SAY" l1="Results that" l2="speak volumes." light />
       <div style={{maxWidth:700,margin:"0 auto",textAlign:"center"}}>
-        <div style={{background:"#141414",borderRadius:24,padding:"52px 60px",boxShadow:"0 20px 60px rgba(0,0,0,.3)",border:"1px solid rgba(200,155,94,.12)"}}>
+        <div style={{background:"#141414",borderRadius:24,padding:"clamp(30px, 8vw, 60px)",boxShadow:"0 20px 60px rgba(0,0,0,.3)",border:"1px solid rgba(200,155,94,.12)"}}>
           <div style={{fontSize:48,color:"#C89B5E",lineHeight:1,marginBottom:22,fontFamily:"'Cormorant Garamond',serif"}}>"</div>
-          <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:500,color:"#fff",lineHeight:1.55,marginBottom:36,fontStyle:"italic"}}>{t.q}</p>
+          <p style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(18px, 4vw, 24px)",fontWeight:500,color:"#fff",lineHeight:1.55,marginBottom:36,fontStyle:"italic"}}>{t.q}</p>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:14}}>
             <div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#C89B5E,#E8BE84)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#0D0D0D",fontFamily:"'Space Mono',monospace"}}>{t.av}</div>
             <div style={{textAlign:"left"}}>
               <div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{t.a}</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.35)"}}>{t.r}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>{t.r}</div>
             </div>
           </div>
         </div>
         <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:24}}>
-          {list.map((_,i)=><div key={i} onClick={()=>setActive(i)} style={{width:i===active?32:8,height:8,borderRadius:100,background:i===active?"#C89B5E":"rgba(200,155,94,.2)",cursor:"none",transition:"all .3s"}}/>)}
+          {list.map((_,i)=><div key={i} onClick={()=>setActive(i)} style={{width:i===active?32:8,height:8,borderRadius:100,background:i===active?"#C89B5E":"rgba(200,155,94,.2)",cursor:"default",transition:"all .3s"}}/>)}
         </div>
       </div>
     </section>
   );
 };
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 const CTA = (): ReactNode => (
-  <section style={{background:"#0D0D0D",padding:"140px 80px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+  <section style={{background:"#0D0D0D",padding:"clamp(80px, 15vw, 140px) 24px",textAlign:"center",position:"relative",overflow:"hidden"}}>
     <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,rgba(200,155,94,.08) 0%,transparent 65%)"}}/>
     <div style={{position:"absolute",top:"10%",left:"5%",width:400,height:400,borderRadius:"50%",border:"1px solid rgba(200,155,94,.05)",animation:"spin-slow 40s linear infinite"}}/>
     <div style={{position:"absolute",bottom:"10%",right:"5%",width:280,height:280,borderRadius:"50%",border:"1px solid rgba(200,155,94,.04)",animation:"spin-slow 60s linear infinite reverse"}}/>
     <div className="sr" style={{position:"relative",zIndex:2}}>
       <p style={{fontSize:11,letterSpacing:".16em",color:"#C89B5E",textTransform:"uppercase",fontFamily:"'Space Mono',monospace",marginBottom:20}}>START TODAY — FREE</p>
-      <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(48px,6vw,88px)",fontWeight:700,lineHeight:1.05,color:"#fff",marginBottom:22}}>Stop guessing.<br/><span className="gold-shimmer">Start Sentinel.</span></h2>
-      <p style={{fontSize:17,color:"rgba(255,255,255,.4)",marginBottom:52,fontWeight:300}}>Join 10,000+ businesses managing inventory with absolute confidence.</p>
-      <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"20px 60px",borderRadius:12,fontSize:16,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"none",boxShadow:"0 0 48px rgba(200,155,94,.3)",letterSpacing:".02em"}}>Get Started Free — No CC Required</button>
-      <p style={{marginTop:20,fontSize:13,color:"rgba(255,255,255,.2)"}}>14-day free trial · Cancel anytime · Setup in under 5 minutes</p>
+      <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"clamp(32px,8vw,88px)",fontWeight:700,lineHeight:1.05,color:"#fff",marginBottom:22}}>Stop guessing.<br/><span className="gold-shimmer">Start Sentinel.</span></h2>
+      <p style={{fontSize:17,color:"rgba(255,255,255,0.4)",marginBottom:52,fontWeight:300}}>Join 10,000+ businesses managing inventory with absolute confidence.</p>
+      <button className="btn-ripple" style={{background:"linear-gradient(135deg,#C89B5E,#E8BE84)",color:"#0D0D0D",border:"none",padding:"16px 48px",borderRadius:12,fontSize:16,fontWeight:700,fontFamily:"'DM Sans',sans-serif",cursor:"default",boxShadow:"0 0 48px rgba(200,155,94,.3)",letterSpacing:".02em", width: "100%", maxWidth: "400px"}}>Get Started Free</button>
+      <p style={{marginTop:20,fontSize:13,color:"rgba(255,255,255,0.2)"}}>14-day free trial · Cancel anytime</p>
     </div>
   </section>
 );
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 const Footer = (): ReactNode => (
-  <footer className="sr" style={{background:"#0A0A0A",borderTop:"1px solid rgba(200,155,94,.09)",padding:"60px 80px 40px"}}>
-    <div style={{display:"flex",justifyContent:"space-between",marginBottom:48}}>
-      <div>
+  <footer className="sr" style={{background:"#0A0A0A",borderTop:"1px solid rgba(200,155,94,.09)",padding:"60px clamp(24px, 8vw, 80px) 40px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",flexDirection: "row", gap: "40px", flexWrap: "wrap"}} className="footer-content">
+      <div style={{flex: "1 1 260px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
           <div style={{width:32,height:32,background:"linear-gradient(135deg,#C89B5E,#E8BE84)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#0D0D0D",fontFamily:"'Space Mono',monospace"}}>S</div>
           <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:600,color:"#fff"}}>StockSentinel</span>
         </div>
-        <p style={{fontSize:13,color:"rgba(255,255,255,.28)",maxWidth:260,lineHeight:1.7}}>The intelligent inventory platform for modern commerce.</p>
+        <p style={{fontSize:13,color:"rgba(255,255,255,0.28)",maxWidth:260,lineHeight:1.7}}>The intelligent inventory platform for modern commerce.</p>
       </div>
-      {[{label:"Product",links:["Features","Pricing","Integrations","Changelog"]},{label:"Company",links:["About","Blog","Careers","Press"]},{label:"Support",links:["Documentation","API Ref","Status","Contact"]}].map(col=>(
-        <div key={col.label}>
-          <p style={{fontSize:10,letterSpacing:".12em",color:"#C89B5E",textTransform:"uppercase",fontFamily:"'Space Mono',monospace",marginBottom:16}}>{col.label}</p>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {col.links.map(l=><a key={l} href="#" style={{fontSize:13,color:"rgba(255,255,255,.35)",textDecoration:"none",transition:"color .2s"}} onMouseEnter={e=>e.currentTarget.style.color="#C89B5E"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>{l}</a>)}
+      <div style={{display: "flex", gap: "40px", flexWrap: "wrap", flex: "2 1 auto", justifyContent: "space-between"}}>
+        {[{label:"Product",links:["Features","Pricing","Integrations","Changelog"]},{label:"Company",links:["About","Blog","Careers","Press"]},{label:"Support",links:["Documentation","API Ref","Status","Contact"]}].map(col=>(
+          <div key={col.label} style={{minWidth: "120px"}}>
+            <p style={{fontSize:10,letterSpacing:".12em",color:"#C89B5E",textTransform:"uppercase",fontFamily:"'Space Mono',monospace",marginBottom:16}}>{col.label}</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {col.links.map(l=><a key={l} href="#" style={{fontSize:13,color:"rgba(255,255,255,0.35)",textDecoration:"none",transition:"color .2s"}} onMouseEnter={e=>e.currentTarget.style.color="#C89B5E"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.35)"}>{l}</a>)}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-    <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:24,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <p style={{fontSize:12,color:"rgba(255,255,255,.18)"}}>© 2026 StockSentinel Inc. All rights reserved.</p>
-      <p style={{fontSize:12,color:"rgba(255,255,255,.18)",fontFamily:"'Space Mono',monospace"}}>SOC2 · ISO27001 · GDPR</p>
+    <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:24,marginTop: 48, display:"flex",justifyContent:"space-between",alignItems:"center", flexWrap: "wrap", gap: "16px"}}>
+      <p style={{fontSize:12,color:"rgba(255,255,255,0.18)"}}>© 2026 StockSentinel Inc.</p>
+      <p style={{fontSize:12,color:"rgba(255,255,255,0.18)",fontFamily:"'Space Mono',monospace"}}>SOC2 · ISO27001 · GDPR</p>
     </div>
   </footer>
 );

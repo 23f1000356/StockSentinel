@@ -78,7 +78,7 @@ export function Dashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {/* Total Products */}
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between">
@@ -128,10 +128,10 @@ export function Dashboard() {
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-md p-6">
         <h2 className="text-lg text-gray-800 mb-4">Quick Actions</h2>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => navigate('/user/products')}
-            className="px-6 py-3 rounded-lg text-white flex items-center gap-2 hover:opacity-90 transition-opacity"
+            className="flex-1 px-6 py-3 rounded-lg text-white flex justify-center items-center gap-2 hover:opacity-90 transition-opacity"
             style={{ backgroundColor: '#C89B5A' }}
           >
             <Plus size={18} />
@@ -139,7 +139,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => navigate('/user/stock')}
-            className="px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-gray-100 transition-colors"
+            className="flex-1 px-6 py-3 rounded-lg flex justify-center items-center gap-2 hover:bg-gray-100 transition-colors"
             style={{ backgroundColor: '#EFEAE4', color: '#1F2937' }}
           >
             <RefreshCw size={18} />
@@ -147,7 +147,7 @@ export function Dashboard() {
           </button>
           <button
             onClick={() => navigate('/user/products')}
-            className="px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-gray-100 transition-colors"
+            className="flex-1 px-6 py-3 rounded-lg flex justify-center items-center gap-2 hover:bg-gray-100 transition-colors"
             style={{ backgroundColor: '#EFEAE4', color: '#1F2937' }}
           >
             <Eye size={18} />
@@ -156,7 +156,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Low Stock Alerts */}
         <div className="bg-white rounded-xl shadow-md p-6">
           <h2 className="text-lg text-gray-800 mb-4">Low Stock Alerts</h2>
@@ -170,11 +170,11 @@ export function Dashboard() {
             <div className="space-y-3">
               {lowStockItems.slice(0, 3).map((product) => (
                 <div
-                  key={product.id}
+                  key={product._id}
                   className="p-4 rounded-lg border border-yellow-200"
                   style={{ backgroundColor: '#FEF3C7' }}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <AlertTriangle className="text-yellow-600" size={18} />
@@ -187,7 +187,7 @@ export function Dashboard() {
                     </div>
                     <button
                       onClick={() => navigate('/user/stock')}
-                      className="px-4 py-2 rounded-lg text-sm text-white"
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm text-white"
                       style={{ backgroundColor: '#C89B5A' }}
                     >
                       Update Stock
@@ -238,7 +238,7 @@ export function Dashboard() {
             </thead>
             <tbody>
               {products.slice(0, 5).map((product) => (
-                <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <tr key={product._id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4 text-sm text-gray-800">{product.name}</td>
                   <td className="py-3 px-4 text-sm text-gray-600">{product.category}</td>
                   <td className="py-3 px-4 text-sm">

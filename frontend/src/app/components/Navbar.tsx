@@ -1,9 +1,11 @@
-import { Search, Bell, User, Sun, Moon } from 'lucide-react';
+import { Search, Bell, User, Sun, Moon, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
+import { useSidebar } from '../context/SidebarContext';
 
 export function Navbar() {
   const { user } = useStore();
+  const { toggle } = useSidebar();
   const [isNight, setIsNight] = useState(false);
 
   useEffect(() => {
@@ -23,8 +25,15 @@ export function Navbar() {
 
   return (
     <header className={`${isNight ? 'bg-[#1B1F2A] border-[#2B3242]' : 'bg-[#F5F1EB] border-gray-200'} border-b px-6 py-4`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1 max-w-md">
+      <div className="flex items-center justify-between gap-4">
+        <button 
+          onClick={toggle}
+          className={`lg:hidden p-2 rounded-xl transition-colors ${isNight ? 'hover:bg-[#22293A] text-white' : 'hover:bg-white text-gray-600'}`}
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        <div className="hidden md:flex flex-1 max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -52,10 +61,10 @@ export function Navbar() {
           </button>
 
           <div className={`flex items-center gap-3 pl-4 border-l ${isNight ? 'border-[#3A465E]' : 'border-gray-300'}`}>
-            <div className="w-10 h-10 bg-[#C89B5A] rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#C89B5A] rounded-full flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-white" />
             </div>
-            <div className="text-sm">
+            <div className="hidden sm:block text-sm">
               <p className={`font-semibold ${isNight ? 'text-white' : 'text-gray-900'}`}>{user?.name ?? 'Admin User'}</p>
               <p className={`${isNight ? 'text-gray-300' : 'text-gray-500'}`}>{user?.email ?? 'admin@example.com'}</p>
             </div>

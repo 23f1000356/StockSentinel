@@ -85,7 +85,7 @@ export function Products() {
   return (
     <div className="space-y-6 page-animate-right">
       {/* Page Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl text-gray-800 mb-1">Products</h1>
           <p className="text-gray-600">Manage and update your inventory</p>
@@ -93,7 +93,7 @@ export function Products() {
         <button
           onClick={() => setShowAddModal(true)}
           disabled={(plan === 'free' && products.length >= 10) || planStatus === 'expired'}
-          className="px-6 py-3 rounded-lg text-white flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full sm:w-auto px-6 py-3 rounded-lg text-white flex justify-center items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
           style={{ backgroundColor: '#C89B5A' }}
         >
           <Plus size={18} />
@@ -110,7 +110,7 @@ export function Products() {
       )}
 
       {/* Quick Info Bar */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-md p-4">
           <p className="text-sm text-gray-600">Products</p>
           <p className="text-2xl text-gray-800">{products.length}</p>
@@ -130,8 +130,8 @@ export function Products() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex gap-4 items-center">
+      <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 overflow-hidden">
+        <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -144,40 +144,42 @@ export function Products() {
             />
           </div>
 
-          {/* Category Filter */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-4">
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
-          {/* Stock Filter */}
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
-          >
-            {stockLevels.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
+            {/* Stock Filter */}
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C89B5A]"
+            >
+              {stockLevels.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Category Tabs */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-6 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
                 categoryFilter === cat
                   ? 'text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -219,7 +221,7 @@ export function Products() {
                     const isLowStock = product.stock < product.lowStockThreshold && product.stock > 0;
                     return (
                   <tr
-                    key={product.id}
+                    key={product._id}
                     className={`border-b border-gray-100 ${
                       isLowStock ? 'bg-[#FEF3C7] hover:bg-[#1A1A1A] group' : 'hover:bg-[#1A1A1A] group'
                     }`}

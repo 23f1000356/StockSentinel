@@ -123,7 +123,7 @@ export function ProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-[#1F2937]">Products</h1>
           <p className="text-[#6B7280] mt-1">Manage your inventory products</p>
@@ -131,7 +131,7 @@ export function ProductsPage() {
         <button
           onClick={() => setShowAddModal(true)}
           disabled={isLimitReached || planStatus === 'expired'}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-colors ${
+          className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-colors w-full sm:w-auto ${
             isLimitReached || planStatus === 'expired'
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-[#C89B5A] text-white hover:bg-[#B88A4A]'
