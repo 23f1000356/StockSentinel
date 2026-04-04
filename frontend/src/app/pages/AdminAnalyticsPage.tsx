@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DollarSign, Users, BarChart3, Lock, AlertTriangle } from 'lucide-react';
 import api from '../api/axios';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#C89B5A', '#D4A574', '#E0B88E', '#ECCAA8', '#1F2937'];
 
@@ -161,7 +161,8 @@ export function AdminAnalyticsPage() {
         {usagePieData.reduce((s, x) => s + x.value, 0) === 0 ? (
           <div className="text-[#6B7280]">No feature usage yet.</div>
         ) : (
-          <div style={{ width: '100%', height: 340 }}>
+        <div className="flex flex-col md:flex-row items-center gap-8">
+          <div style={{ width: '100%', height: 340 }} className="flex-1">
             <ResponsiveContainer>
               <PieChart>
                 <Pie
@@ -178,9 +179,30 @@ export function AdminAnalyticsPage() {
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend verticalAlign="middle" align="right" layout="vertical" />
               </PieChart>
             </ResponsiveContainer>
           </div>
+          
+          <div className="flex-1 space-y-3">
+            {usagePieData.map((item, idx) => (
+              <div key={item.name} className="flex items-center gap-3">
+                <div 
+                  className="w-4 h-4 rounded-full shadow-sm" 
+                  style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-[#1F2937] capitalize">
+                    {item.name.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-xs text-[#6B7280]">
+                    {item.value} uses ({item.percent.toFixed(1)}%)
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
         )}
       </div>
     </div>

@@ -232,6 +232,18 @@ export function useStore() {
     }
   };
 
+  const deleteProduct = async (productId: string) => {
+    try {
+      await api.delete(`/products/${productId}`);
+      globalState.products = globalState.products.filter(p => p._id !== productId);
+      updateListeners();
+      await fetchActivity();
+    } catch (err) {
+      console.error('Delete product error:', err);
+      throw err;
+    }
+  };
+
   return {
     ...globalState,
     login,
@@ -240,6 +252,7 @@ export function useStore() {
     logout,
     addProduct,
     updateProductStock,
+    deleteProduct,
     fetchProducts,
     fetchActivity,
     fetchAlerts,

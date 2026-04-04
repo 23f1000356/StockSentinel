@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Search, Minus, Plus, Package, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Search, Minus, Plus, Package, AlertTriangle, TrendingUp, Trash2, X } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export function StockManagement() {
-  const { products, updateProductStock } = useStore();
+  const { products, updateProductStock, deleteProduct } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [stockFilter, setStockFilter] = useState('All');
@@ -28,6 +28,7 @@ export function StockManagement() {
   });
 
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<any | null>(null);
 
   const getProductId = (p: any) => String(p?._id ?? p?.id ?? '');
 
@@ -44,8 +45,65 @@ export function StockManagement() {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
+    const productId = getProductId(productToDelete);
+    
+    setUpdatingId(productId);
+    try {
+      await deleteProduct(productId);
+      setProductToDelete(null);
+    } catch (err) {
+      alert('Failed to delete product');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 page-animate-right">
+      {/* Styled Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in transition-all">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-2">
+                <Trash2 className="text-red-600" size={24} />
+              </div>
+              <button 
+                onClick={() => setProductToDelete(null)} 
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Delete</h3>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">"{productToDelete.name}"</span>? 
+              This action will remove it from all warehouses and stock management records.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setProductToDelete(null)}
+                disabled={updatingId !== null}
+                className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                disabled={updatingId !== null}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 font-medium flex items-center justify-center"
+              >
+                {updatingId !== null ? 'Deleting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div>
         <h1 className="text-2xl text-gray-800 mb-1">Stock Management</h1>
@@ -173,6 +231,7 @@ export function StockManagement() {
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Update</th>
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Status</th>
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Last Updated</th>
+                <th className="text-left py-3 px-4 text-sm text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -266,6 +325,16 @@ export function StockManagement() {
                       )}
                     </td>
                     <td className={`py-3 px-4 text-sm ${isLowStock || isOutOfStock ? '!text-black group-hover:!text-white' : 'text-gray-500 group-hover:!text-white'}`}>Today</td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => setProductToDelete(product)}
+                        disabled={isUpdating}
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        title="Delete product"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </td>
                   </tr>
                 )})
               )}
@@ -304,15 +373,23 @@ export function StockManagement() {
                     <Minus size={14} />
                   </button>
                   <span className="text-sm !text-black group-hover:!text-white font-medium w-8 text-center">{product.stock}</span>
-                  <button
-                    onClick={() => handleStockChange(productId, 1)}
-                    disabled={isUpdating}
-                    className="w-8 h-8 rounded-lg text-white flex items-center justify-center disabled:opacity-50"
-                    style={{ backgroundColor: '#C89B5A' }}
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
+                    <button
+                      onClick={() => handleStockChange(productId, 1)}
+                      disabled={isUpdating}
+                      className="w-8 h-8 rounded-lg text-white flex items-center justify-center disabled:opacity-50"
+                      style={{ backgroundColor: '#C89B5A' }}
+                    >
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      onClick={() => setProductToDelete(product)}
+                      disabled={isUpdating}
+                      className="w-8 h-8 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 flex items-center justify-center transition-colors disabled:opacity-50 ml-1"
+                      title="Delete product"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
               </div>
             )})}
           </div>

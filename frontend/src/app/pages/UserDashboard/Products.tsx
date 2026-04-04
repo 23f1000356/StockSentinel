@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, AlertTriangle, X } from 'lucide-react';
+import { Plus, Search, AlertTriangle, X, Trash2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useApp } from '../../context/AppContext';
 import api from '../../api/axios';
 
 export function Products() {
-  const { products, addProduct } = useStore();
+  const { products, addProduct, deleteProduct } = useStore();
   const { plan, planStatus } = useApp();
   const [warehouses, setWarehouses] = useState<Array<{ _id: string; name: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +20,8 @@ export function Products() {
     warehouse: 'Main',
     lowStockThreshold: 5,
   });
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<any | null>(null);
 
   const categories = ['All', 'Electronics', 'Clothing', 'Accessories'];
   const stockLevels = ['All', 'Low Stock', 'Out of Stock'];
@@ -53,6 +55,20 @@ export function Products() {
       warehouse: 'Main',
       lowStockThreshold: 5,
     });
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
+    
+    setUpdatingId(productToDelete._id);
+    try {
+      await deleteProduct(productToDelete._id);
+      setProductToDelete(null);
+    } catch (err) {
+      alert('Failed to delete product');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const lowStockCount = products.filter((p) => p.stock < p.lowStockThreshold).length;
@@ -204,6 +220,7 @@ export function Products() {
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Warehouse</th>
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Price</th>
                 <th className="text-left py-3 px-4 text-sm text-gray-600">Status</th>
+                <th className="text-left py-3 px-4 text-sm text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -243,6 +260,16 @@ export function Products() {
                       ) : (
                         <span className="text-green-600 group-hover:!text-white">Active</span>
                       )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => setProductToDelete(product)}
+                        disabled={updatingId === product._id}
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        title="Delete product"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </td>
                   </tr>
                     );

@@ -2,23 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import api from '../api/axios';
 
+import { useStore } from '../store/useStore';
+
 type Warehouse = { _id: string; name: string; location: string };
-type Product = {
-  _id: string;
-  name: string;
-  category: string;
-  warehouse?: string;
-  stock: number;
-  price: number;
-};
 
 export function WarehouseDetailsPage() {
   const { warehouseId } = useParams();
+  const { products: allProducts, deleteProduct, fetchProducts } = useStore();
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmingProduct, setConfirmingProduct] = useState<Product | null>(null);
+  const [confirmingProduct, setConfirmingProduct] = useState<any | null>(null);
   const [removing, setRemoving] = useState(false);
 
   const refresh = async () => {
@@ -26,15 +20,14 @@ export function WarehouseDetailsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [wRes, pRes] = await Promise.all([api.get('/warehouses'), api.get('/products')]);
+      const wRes = await api.get('/warehouses');
       const list: Warehouse[] = Array.isArray(wRes.data) ? wRes.data : [];
       const selected = list.find((w) => String(w._id) === String(warehouseId)) ?? null;
       setWarehouse(selected);
 
-      const allProducts: Product[] = Array.isArray(pRes.data) ? pRes.data : [];
-      const selectedName = String(selected?.name ?? '').trim().toLowerCase();
-      const filtered = allProducts.filter((p) => String(p.warehouse ?? 'Main').trim().toLowerCase() === selectedName);
-      setProducts(filtered);
+      if (allProducts.length === 0) {
+        await fetchProducts();
+      }
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to load warehouse details.');
     } finally {
@@ -47,6 +40,12 @@ export function WarehouseDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warehouseId]);
 
+  const products = useMemo(() => {
+    if (!warehouse) return [];
+    const selectedName = String(warehouse.name ?? '').trim().toLowerCase();
+    return allProducts.filter((p) => String(p.warehouse ?? 'Main').trim().toLowerCase() === selectedName);
+  }, [allProducts, warehouse]);
+
   const stats = useMemo(() => {
     const totalProducts = products.length;
     const totalStock = products.reduce((sum, p) => sum + Number(p.stock ?? 0), 0);
@@ -56,11 +55,11 @@ export function WarehouseDetailsPage() {
   }, [products]);
 
   const handleRemove = async (productId: string) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       setRemoving(true);
-      await api.delete(`/products/${productId}`);
+      await deleteProduct(productId);
       setConfirmingProduct(null);
-      await refresh();
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to remove product.');
     } finally {
